@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "magic"
+version = "0.5.0"
+description = "Microsoft Azure Graph Informations Crawler"
+authors = [
+    {name = "Alexander Goedeke"}
+]
+maintainers = [
+  {name = "Alexander Goedeke"},
+  {name = "Daniel Thewes"},
+  {name = "Martin Glueck"}
+]
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE.txt"]
+requires-python = ">=3.11"
+dependencies = [
+    "azure-core>=1.38.0",
+    "azure-identity>=1.25.1",
+    "msgraph-beta-sdk>=1.55.0",
+    "pydantic>=2.12.5",
+    "PyYAML>=6.0.3",
+    "requests>=2.32.5",
+    "email-validator>=2.3.0",
+    "cryptography>=45.0.4",
+]
+
+[project.scripts]
+magic = "magic.main:main"
+magic-init = "magic.main:init"
+
+[tool.setuptools.package-data]
+magic = ["*.yaml"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

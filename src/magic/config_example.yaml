@@ -1,0 +1,107 @@
+settings:
+  permission_preflight_check: True
+  auth:
+    client_secret:
+    client_id:
+    tenant_id:
+  ipapi:
+    key: SomeRandomString
+    endpoint:
+    cert: False
+  defaults:
+    user_principal_names: # define users scope
+    date_start: # define a default date range
+    date_end:
+
+crawl:
+  - type: m365_ual
+    search_name_prefix: DataCrawler
+    date_start:
+    date_end:
+    keyword:
+    service:
+    user_principal_names: # datatype: list
+    record_types: # datatype: list
+    operations: # datatype: list
+    ip_addresses: # datatype: list
+    #number_interval_days: 1
+
+
+  - type: m365_signin
+    date_start:
+    date_end:
+    user_principal_names:
+    sign_in_type: user
+    #number_interval_days: 1
+
+
+  - type: m365_audit
+    date_start:
+    date_end:
+    user_principal_names:
+    #number_interval_days: 1
+
+
+  - type: m365_message_traces_pwsh
+    date_start:
+    date_end:
+    from_ip:
+    to_ip:
+    subject:
+    # set to "Contains", "EndsWith" or "StartsWith" only when subject is defined
+    subject_filter_type:
+    recipient_addresses:
+    sender_addresses:
+    result_size:
+    #number_interval_days: 10
+
+
+  - type: m365_messages
+    date_start:
+    date_end:
+    user_principal_names:
+    - jdoe@tenant.com
+
+
+  - type: m365_message
+    # eiher use message_id or internet_message_id
+    message_id: message-id-123456789
+    #internet_message_id:
+    user_principal_name: jdoe@tenant.com
+
+
+  - type: m365
+    message_rules: False
+    authentication_methods: False
+    mailbox_settings: False
+    users_transitive_member_of: False
+    service_principals_transitive_member_of: False
+    directory_provisioning: False
+    directory_roles: False
+    risk_detections: False
+    risky_users: False
+    applications: False
+    conditional_access: False
+    security: False
+    service_principals: False
+    users: False
+    groups: False
+    devices: False
+    permission_grants: False
+    recommendations: False
+    attack_simulation: False
+
+enrich:
+  timesketch:
+    enabled: True
+    output_filename: timesketch.jsonl
+
+  ipapi:
+    enabled: True
+    output_filename: ipapi.jsonl
+    input_filename: timesketch.jsonl # only used if input src should differ from std
+
+  hash:
+    enabled: True
+    output_filename: hash.jsonl
+    output_filename_csv: hash.csv
