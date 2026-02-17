@@ -16,3 +16,5 @@ reports
 public
 debug_*
 *manifest.json
+.coverage
+coverage.xml
