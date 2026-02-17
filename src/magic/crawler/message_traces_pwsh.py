@@ -93,8 +93,6 @@ class MessageTracesPWSHCrawler(BaseCrawler):
 
     @require_permissions([(ServicePrincipalType.O365_EXCHANGE, "Exchange.ManageAsApp")])
     async def crawl_message_traces_pwsh(self, date_start, date_end, sender_address, recipient_address):
-        date_start, date_end = self._read_date_fields()
-
         self.logger.info(
             f"Get message trace logs via powershell from {date_start} to {date_end}"
             + (f" for sender {sender_address}" if sender_address else "")

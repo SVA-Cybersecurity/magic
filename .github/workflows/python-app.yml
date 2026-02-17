@@ -28,6 +28,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 black
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install -e ".[dev]"
     - name: Lint with flake8 and format with black
       run: |
         # stop the build if there are Python syntax errors or undefined names
@@ -35,6 +36,6 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 src/magic/ --count --exit-zero --max-complexity=30 --max-line-length=999 --statistics
         black --check --skip-string-normalization --line-length 127 .
-    - name: Check if the application can be installed
+    - name: Run tests with pytest
       run: |
-        pip install .
+        pytest tests/ -v --cov=magic --cov-report=xml --cov-report=term
