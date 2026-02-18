@@ -315,7 +315,8 @@ class BaseCrawler(ICrawler, CreateGraphClientMixin):
         *args,
         **kwargs,
     ) -> None:
-        date_start, date_end = self._read_date_fields()
+        if not date_start and not date_end:
+            date_start, date_end = self._read_date_fields()
 
         if split_days:
             filter = True

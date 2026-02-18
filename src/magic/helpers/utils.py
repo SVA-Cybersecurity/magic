@@ -154,6 +154,10 @@ def daterange(start_date: datetime.datetime, end_date: datetime.datetime, number
 
         yield current_start, interval_end
 
+        # Stop if we've reached the end_date
+        if interval_end >= end_date:
+            break
+
         if is_midnight(current_start):
             next_start = next_midnight(interval_end)
         else:
