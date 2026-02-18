@@ -309,8 +309,8 @@ class Defaults(BaseModel):
 class Settings(BaseModel):
     permission_preflight_check: bool
     auth: AuthSettings
-    ipapi: IpAPISettings
-    s3: S3Settings
+    ipapi: Optional[IpAPISettings] = None
+    s3: Optional[S3Settings] = None
     defaults: Defaults
 
 

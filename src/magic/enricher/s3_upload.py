@@ -48,6 +48,11 @@ class S3Upload(BaseEnricher):
     async def upload_to_s3(self):
         """Uploads the configured file to the S3 bucket."""
 
+        # Check if S3 settings are configured
+        if self.settings.s3 is None:
+            self.logger.error("S3 settings are not configured. Please add an 's3' section to your config file.")
+            return
+
         # Determine source file
         source_file = os.path.join(self.output_dir, self.config.input_filename)
 

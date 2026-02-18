@@ -43,7 +43,7 @@ class BaseEnricher(IEnricher):
         check_output_dir(output_dir, self.logger)
 
     def _is_enabled(self):
-        return self.config.enabled is True
+        return getattr(self.config, "enabled", False) is True
 
     async def run(self):
         tasks = [log_task(task, self.logger) for task in self.get_tasks()]

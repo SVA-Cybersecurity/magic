@@ -40,6 +40,11 @@ class IpApi(BaseEnricher):
         return []
 
     async def output_ipapi(self):
+        # Check if ipapi settings are configured
+        if self.settings.ipapi is None:
+            self.logger.error("ipapi settings are not configured. Please add an 'ipapi' section to your config file.")
+            return
+
         input_file = os.path.join(self.output_dir, self.config.input_filename)
         output_file = os.path.join(self.output_dir, self.config.output_filename)
 
