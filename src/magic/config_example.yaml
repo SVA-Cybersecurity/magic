@@ -8,6 +8,11 @@ settings:
     key: SomeRandomString
     endpoint:
     cert: False
+  s3:
+    endpoint_url: # Optional: Custom S3 endpoint URL (for S3-compatible services)
+    aws_access_key_id: # AWS Access Key ID
+    aws_secret_access_key: # AWS Secret Access Key
+    verify_ssl: True  # SSL certificate verification
   defaults:
     user_principal_names: # define users scope
     date_start: # define a default date range
@@ -97,11 +102,16 @@ enrich:
     output_filename: timesketch.jsonl
 
   ipapi:
-    enabled: True
+    enabled: False
     output_filename: ipapi.jsonl
     input_filename: timesketch.jsonl # only used if input src should differ from std
 
+  s3_upload:
+    enabled: False
+    bucket_path: my-bucket/sva_customer/20_upload_by_customer/triages/
+    input_filename: timesketch.jsonl  # File from the output directory
+
   hash:
-    enabled: True
+    enabled: False
     output_filename: hash.jsonl
     output_filename_csv: hash.csv

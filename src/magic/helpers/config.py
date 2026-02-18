@@ -268,10 +268,17 @@ class IpAPIConfig(BaseModel):
     input_filename: str = Jsonl.OUTPUT_FILENAME
 
 
+class S3UploadConfig(BaseModel):
+    enabled: bool
+    bucket_path: str
+    input_filename: str = "timesketch.jsonl"
+
+
 class EnrichConfig(BaseModel):
     timesketch: TimesketchConfig
     ipapi: IpAPIConfig
     hash: HashConfig
+    s3_upload: Optional[S3UploadConfig] = None
 
 
 class AuthSettings(BaseModel):
@@ -286,6 +293,13 @@ class IpAPISettings(BaseModel):
     cert: str | bool = False
 
 
+class S3Settings(BaseModel):
+    endpoint_url: Optional[str] = None
+    aws_access_key_id: Optional[str] = None
+    aws_secret_access_key: Optional[str] = None
+    verify_ssl: bool = True
+
+
 class Defaults(BaseModel):
     date_start: Optional[datetime] = None
     date_end: Optional[datetime] = None
@@ -296,6 +310,7 @@ class Settings(BaseModel):
     permission_preflight_check: bool
     auth: AuthSettings
     ipapi: IpAPISettings
+    s3: S3Settings
     defaults: Defaults
 
 
