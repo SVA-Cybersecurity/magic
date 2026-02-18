@@ -32,7 +32,7 @@ class S3Upload(BaseEnricher):
 
     Configuration options in enrich.s3_upload:
     - enabled: Enable/disable the enricher
-    - bucket_path: Target path in bucket (e.g. sva_customer/20_upload_by_customer/triages/)
+    - bucket_path: Target path in bucket (e.g. folder/)
     - input_filename: Source file to upload (default: timesketch.jsonl)
     """
 

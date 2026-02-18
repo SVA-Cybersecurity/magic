@@ -108,7 +108,7 @@ enrich:
 
   s3_upload:
     enabled: False
-    bucket_path: my-bucket/sva_customer/20_upload_by_customer/triages/
+    bucket_path: my-bucket/folder/
     input_filename: timesketch.jsonl  # File from the output directory
 
   hash:
