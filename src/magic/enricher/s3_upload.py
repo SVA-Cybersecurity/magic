@@ -76,7 +76,7 @@ class S3Upload(BaseEnricher):
                 s3_config['verify'] = False
                 self.logger.warning("SSL verification is disabled!")
 
-            self.logger.debug(f"Initializing S3 client with endpoint: {self.settings.s3.endpoint_url or 'default AWS'}")
+            self.logger.debug(f"Initializing S3 client")
             s3_client = boto3.client('s3', **s3_config)
 
             # Extract bucket name and path
@@ -99,6 +99,11 @@ class S3Upload(BaseEnricher):
                 object_key = filename
 
             self.logger.info(f"Uploading {source_file} to s3://{bucket_name}/{object_key}")
+
+            # Test bucket access
+            s3_client.head_bucket(Bucket=bucket_name)
+
+            self.logger.info(f"Using S3 endpoint {s3_client.meta.endpoint_url} and access key ID {'*' * 16}{s3_client._get_credentials().access_key[16:]}")
 
             # Perform upload
             s3_client.upload_file(Filename=source_file, Bucket=bucket_name, Key=object_key)
