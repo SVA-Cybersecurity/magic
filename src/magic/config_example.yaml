@@ -8,7 +8,7 @@ settings:
     key: SomeRandomString
     endpoint:
     cert: False
-  s3:
+  s3: #will use config from ~/.aws/config and ~/.aws/credentials if left empty
     endpoint_url: # Optional: Custom S3 endpoint URL (for S3-compatible services)
     aws_access_key_id: # AWS Access Key ID
     aws_secret_access_key: # AWS Secret Access Key
