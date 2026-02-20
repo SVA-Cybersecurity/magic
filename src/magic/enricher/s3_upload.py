@@ -103,7 +103,9 @@ class S3Upload(BaseEnricher):
             # Test bucket access
             s3_client.head_bucket(Bucket=bucket_name)
 
-            self.logger.info(f"Using S3 endpoint {s3_client.meta.endpoint_url} and access key ID {'*' * 16}{s3_client._get_credentials().access_key[16:]}")
+            self.logger.info(
+                f"Using S3 endpoint {s3_client.meta.endpoint_url} and access key ID {'*' * 16}{s3_client._get_credentials().access_key[16:]}"
+            )
 
             # Perform upload
             s3_client.upload_file(Filename=source_file, Bucket=bucket_name, Key=object_key)
