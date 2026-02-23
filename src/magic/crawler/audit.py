@@ -93,6 +93,10 @@ class AuditCrawler(BaseCrawler):
 
     async def _get_user_id(self, user_principal_name: str) -> int | None:
         try:
+            await self.ensure_graph_client()
+            if self.graph_client is None:
+                raise Exception("Graph client is not initialized")
+
             res = await self.make_graph_request_with_retry(
                 request_func=self.graph_client.users.by_user_id(user_principal_name).get
             )

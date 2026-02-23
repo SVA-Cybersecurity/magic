@@ -65,7 +65,9 @@ class MessageCrawler(BaseCrawler):
 
     @require_permissions([(ServicePrincipalType.GRAPH_API, "Mail.Read")])
     async def crawl_message(self) -> None:
-        self.graph_client = await self._create_graph_client(self.settings.auth, scopes=self.DEFAULT_SCOPES)
+        await self.ensure_graph_client()
+        if self.graph_client is None:
+            return
 
         request_config = MessageItemRequestBuilder.MessageItemRequestBuilderGetRequestConfiguration(
             options=[ResponseHandlerOption(NativeResponseHandler())],

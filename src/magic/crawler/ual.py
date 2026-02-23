@@ -45,6 +45,10 @@ class UalCrawler(BaseCrawler):
     )
     async def crawl_ual(self, encoding: str = "utf-8") -> None:
 
+        await self.ensure_graph_client()
+        if self.graph_client is None:
+            return
+
         date_start, date_end = self._read_date_fields()
         temp_user_list = ", ".join((self.config.user_principal_names if self.config.user_principal_names else []))
         self.logger.info(
@@ -171,6 +175,10 @@ class UalCrawler(BaseCrawler):
             )
             with open(query_id_file_path, "r") as qid_file:
                 query_id = qid_file.read()
+
+            await self.ensure_graph_client()
+            if self.graph_client is None:
+                return
         else:
             params = AuditLogQuery(
                 odata_type="#microsoft.graph.security.auditLogQuery",
@@ -189,7 +197,7 @@ class UalCrawler(BaseCrawler):
             )
 
             try:
-                self.graph_client = await self._create_graph_client(self.settings.auth, self.DEFAULT_SCOPES)
+                await self.ensure_graph_client()
                 if self.graph_client is None:
                     return
 
@@ -210,6 +218,10 @@ class UalCrawler(BaseCrawler):
         return (query_id, search_identifier, search_identifier)
 
     async def download_ual(self, search_name, query_id, encoding, output_file_path):
+
+        await self.ensure_graph_client()
+        if self.graph_client is None:
+            return
 
         total_events = 0
 

@@ -81,7 +81,7 @@ class MessagesCrawler(BaseCrawler):
         )
 
         if not os.path.exists(output_file_path):
-            self.graph_client = await self._create_graph_client(self.settings.auth, self.DEFAULT_SCOPES)
+            await self.ensure_graph_client()
             if self.graph_client is None:
                 return
 
