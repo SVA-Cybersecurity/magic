@@ -32,7 +32,7 @@ class AuditCrawler(BaseCrawler):
             user_id = await self._get_user_id(user_principal_name)
             if user_id:
                 self.logger.debug(f"User '{user_principal_name}' has ID '{user_id}'")
-                return f"{base_filter} and (initiatedBy/user/id eq '{user_id}' or targetResources/any(c:c/id eq '{user_id}') or initiatedBy/user/userPrincipalName eq '{user_principal_name}' or targetResources/any(c:c/displayName eq '{user_principal_name}')"
+                return f"{base_filter} and (initiatedBy/user/id eq '{user_id}' or targetResources/any(c:c/id eq '{user_id}') or initiatedBy/user/userPrincipalName eq '{user_principal_name}' or targetResources/any(c:c/displayName eq '{user_principal_name}'))"
             else:
                 self.logger.debug(f"Did not find ID for user with name '{user_principal_name}'")
                 return f"{base_filter} and (initiatedBy/user/userPrincipalName eq '{user_principal_name}') or targetResources/any(c:c/displayName eq '{user_principal_name}')"
@@ -93,6 +93,10 @@ class AuditCrawler(BaseCrawler):
 
     async def _get_user_id(self, user_principal_name: str) -> int | None:
         try:
+            await self.ensure_graph_client()
+            if self.graph_client is None:
+                raise Exception("Graph client is not initialized")
+
             res = await self.make_graph_request_with_retry(
                 request_func=self.graph_client.users.by_user_id(user_principal_name).get
             )
