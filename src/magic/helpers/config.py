@@ -74,7 +74,7 @@ class M365UALConfig(BaseAuditConfig):
     search_name_prefix: Optional[str] = "DataCrawler"
     keyword: Optional[str] = ""
     service: Optional[str] = ""
-    user_principal_names: Optional[List[EmailStr]] = []
+    user_principal_names: Optional[List[str]] = []
     record_types: ListOfStrings = []
     operations: ListOfStrings = []
     ip_addresses: ListOfStrings = []

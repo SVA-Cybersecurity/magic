@@ -56,8 +56,6 @@ class BaseCrawler(ICrawler, CreateGraphClientMixin):
         self.reports_dir = reports_dir
         self.logger = Logger(f"{logger}.{self.uuid}", reports_dir, debug).bootstrap()
         self.current_run_permissions = set()
-        self._graph_client_lock = asyncio.Lock()
-        self._graph_client_cache: dict[tuple[str, ...], GraphServiceClient] = {}
 
         check_output_dir(output_dir, self.logger)
 
@@ -69,34 +67,16 @@ class BaseCrawler(ICrawler, CreateGraphClientMixin):
         `make_graph_request_with_retry`, so `self.graph_client` must exist first.
         """
 
+        # Return existing client if already initialized
+        if self.graph_client is not None:
+            return self.graph_client
+
         if scopes is None:
             scopes = self.DEFAULT_SCOPES
 
-        scopes_tuple = tuple(scopes)
-
-        cached = self._graph_client_cache.get(scopes_tuple)
-        if cached is not None:
-            self.graph_client = cached
-            return cached
-
-        lock = getattr(self, "_graph_client_lock", None)
-        if lock is None:
-            self._graph_client_lock = asyncio.Lock()
-            lock = self._graph_client_lock
-
-        async with lock:
-            cached = self._graph_client_cache.get(scopes_tuple)
-            if cached is not None:
-                self.graph_client = cached
-                return cached
-
-            created = await self._create_graph_client(self.settings.auth, scopes=list(scopes_tuple))
-            if created is None:
-                return None
-
-            self._graph_client_cache[scopes_tuple] = created
-            self.graph_client = created
-            return created
+        # Create new client without caching
+        self.graph_client = await self._create_graph_client(self.settings.auth, scopes=scopes)
+        return self.graph_client
 
     def build_odata_filter(self, **filters) -> str:
         """
@@ -254,13 +234,11 @@ class BaseCrawler(ICrawler, CreateGraphClientMixin):
 
         if not os.path.exists(output_file_path):
 
-            await self.ensure_graph_client(scopes=scopes)
-            if self.graph_client is None:
-                return
-
             for func in request_func:
 
-                graph_client = self.graph_client
+                graph_client = await self._create_graph_client(self.settings.auth, scopes=scopes)
+                if graph_client is None:
+                    return
 
                 # get request builder function
                 try:
@@ -428,7 +406,9 @@ class BaseCrawler(ICrawler, CreateGraphClientMixin):
             if self.graph_client is None:
                 return
 
-            graph_client = self.graph_client
+            graph_client = await self._create_graph_client(self.settings.auth)
+            if graph_client is None:
+                return
 
             # Traverse parent attributes to get the request builder function
             try:
