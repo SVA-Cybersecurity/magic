@@ -53,7 +53,7 @@ class SignInCrawler(BaseCrawler):
         )
 
         custom_filter = self.build_odata_filter(
-            userPrincipalName=user_principal_name,
+            userPrincipalName=user_principal_name.lower(),
         )
 
         if custom_filter:
