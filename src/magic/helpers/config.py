@@ -16,7 +16,7 @@ import json
 import sys
 from datetime import datetime
 from .logging import Logger
-from pydantic import BaseModel, EmailStr, BeforeValidator, RootModel, Field, field_validator, model_validator
+from pydantic import BaseModel, EmailStr, UUID4, BeforeValidator, RootModel, Field, field_validator, model_validator
 from typing import List, Optional, Any, Annotated, Union, Literal, Dict
 from pydantic import ValidationError
 from ..enricher.jsonl import Jsonl
@@ -106,7 +106,7 @@ class SignInType(str, Enum):
 
 class M365SigninConfig(BaseAuditConfig):
     type: Literal["m365_signin"] = "m365_signin"
-    user_principal_names: Optional[List[EmailStr]] = []
+    user_principal_names: Optional[List[Union[EmailStr, UUID4]]] = []
     sign_in_type: SignInType = SignInType.USER
     number_interval_days: int = 7
 

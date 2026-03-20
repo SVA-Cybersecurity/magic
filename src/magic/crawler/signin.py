@@ -25,6 +25,31 @@ class SignInCrawler(BaseCrawler):
         self.RETENTION = RETENTION_SIGN_IN
         super().__init__(**kwargs, logger=__name__)
 
+    async def _build_custom_filter(self, user_principal_name: str) -> str:
+        base_filter = "({filter_timstamp_name} ge {date_start} and {filter_timstamp_name} le {date_end})"
+
+        match self.config.sign_in_type.value:
+            case "interactiveUser" | "nonInteractiveUser" | "user":
+                user_id = None
+                if user_principal_name and isinstance(user_principal_name, str):
+                    user_id = await self._get_user_id(user_principal_name)
+                if user_id:
+                    return f"{base_filter} and {self.config.sign_in_type.odata_filter} and (userPrincipalName eq '{user_principal_name.lower()}' or UserId eq '{user_id}')"
+                else:
+                    self.logger.warning(
+                        "Continue with a filter for only the principal name. This will not output all audit events for this user."
+                    )
+                    return f"{base_filter} and {self.config.sign_in_type.odata_filter} and (userPrincipalName eq '{user_principal_name.lower()}')"
+
+            case "servicePrincipal":
+                return f"{base_filter} and {self.config.sign_in_type.odata_filter} and (ServicePrincipalId eq '{user_principal_name}')"
+
+            case "managedIdentity":
+                return f"{base_filter} and {self.config.sign_in_type.odata_filter} and (ServicePrincipalId eq '{user_principal_name}')"
+
+            case _:
+                return f"{base_filter}"
+
     def get_tasks(self) -> list[TaskWrapper]:
         self.logger.debug(f"Get crawl_signin task with params: {self.config.model_dump()}")
 
@@ -49,17 +74,10 @@ class SignInCrawler(BaseCrawler):
 
         self.logger.info(
             f"Get {self.config.sign_in_type.value} sign in logs from {date_start} to {date_end}"
-            + (f" for user {user_principal_name}" if user_principal_name else "")
+            + (f" for {user_principal_name}" if user_principal_name else "")
         )
 
-        custom_filter = self.build_odata_filter(
-            userPrincipalName=user_principal_name.lower(),
-        )
-
-        if custom_filter:
-            custom_filter = self.config.sign_in_type.odata_filter + " and " + custom_filter
-        else:
-            custom_filter = self.config.sign_in_type.odata_filter
+        custom_filter = await self._build_custom_filter(user_principal_name)
 
         self.logger.debug(f"crawl_signin with filter {custom_filter}")
 
