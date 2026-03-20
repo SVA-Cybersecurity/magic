@@ -31,10 +31,12 @@ class AuditCrawler(BaseCrawler):
         if user_principal_name:
             user_id = await self._get_user_id(user_principal_name)
             if user_id:
-                self.logger.debug(f"User '{user_principal_name}' has ID '{user_id}'")
                 return f"{base_filter} and (initiatedBy/user/id eq '{user_id}' or targetResources/any(c:c/id eq '{user_id}') or initiatedBy/user/userPrincipalName eq '{user_principal_name}' or targetResources/any(c:c/displayName eq '{user_principal_name}'))"
             else:
-                self.logger.debug(f"Did not find ID for user with name '{user_principal_name}'")
+                self.logger.warning(
+                    f"Could not get user id for user with principal name '{user_principal_name}'. "
+                    "Continue with a filter for only the principal name. This will not output all audit events for this user."
+                )
                 return f"{base_filter} and (initiatedBy/user/userPrincipalName eq '{user_principal_name}') or targetResources/any(c:c/displayName eq '{user_principal_name}')"
         else:
             return base_filter
@@ -90,26 +92,3 @@ class AuditCrawler(BaseCrawler):
             custom_filter=custom_filter,
             number_interval_days=self.config.number_interval_days,
         )
-
-    async def _get_user_id(self, user_principal_name: str) -> int | None:
-        try:
-            await self.ensure_graph_client()
-            if self.graph_client is None:
-                raise Exception("Graph client is not initialized")
-
-            res = await self.make_graph_request_with_retry(
-                request_func=self.graph_client.users.by_user_id(user_principal_name).get
-            )
-
-            self.logger.debug(f"User '{user_principal_name}' has ID '{res.id}'")
-
-            return res.id
-
-        except Exception as e:
-            self.logger.warning(
-                f"Could not get user id for user with principal name '{user_principal_name}'. "
-                "Continue with a filter for only the principal name. This will not output all audit events for this user."
-            )
-            self.logger.debug(e)
-
-        return None

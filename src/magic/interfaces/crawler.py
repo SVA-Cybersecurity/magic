@@ -111,6 +111,26 @@ class BaseCrawler(ICrawler, CreateGraphClientMixin):
 
         return user_principle_names
 
+    async def _get_user_id(self, user_principal_name: str) -> int | None:
+        try:
+            await self.ensure_graph_client()
+            if self.graph_client is None:
+                raise Exception("Graph client is not initialized")
+
+            res = await self.make_graph_request_with_retry(
+                request_func=self.graph_client.users.by_user_id(user_principal_name).get
+            )
+
+            self.logger.debug(f"User '{user_principal_name}' has ID '{res.id}'")
+
+            return res.id
+
+        except Exception as e:
+            self.logger.warning(f"Could not get user id for user with principal name '{user_principal_name}'. ")
+            self.logger.debug(e)
+
+        return None
+
     def _check_output_file_exists(self, path: str) -> bool:
         if os.path.exists(path):
             self.logger.info(f"Output file '{path}' already exists. Skipping.")
