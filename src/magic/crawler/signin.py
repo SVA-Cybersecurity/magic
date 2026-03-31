@@ -25,8 +25,11 @@ class SignInCrawler(BaseCrawler):
         self.RETENTION = RETENTION_SIGN_IN
         super().__init__(**kwargs, logger=__name__)
 
-    async def _build_custom_filter(self, user_principal_name: str) -> str:
+    async def _build_custom_filter(self, user_principal_name: str | None = None) -> str:
         base_filter = "({filter_timstamp_name} ge {date_start} and {filter_timstamp_name} le {date_end})"
+
+        if not user_principal_name:
+            return f"{base_filter} and {self.config.sign_in_type.odata_filter}"
 
         match self.config.sign_in_type.value:
             case "interactiveUser" | "nonInteractiveUser" | "user":
