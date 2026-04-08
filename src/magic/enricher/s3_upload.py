@@ -76,7 +76,7 @@ class S3Upload(BaseEnricher):
                 s3_config['verify'] = False
                 self.logger.warning("SSL verification is disabled!")
 
-            self.logger.debug(f"Initializing S3 client")
+            self.logger.debug("Initializing S3 client")
             s3_client = boto3.client('s3', **s3_config)
 
             # Extract bucket name and path
