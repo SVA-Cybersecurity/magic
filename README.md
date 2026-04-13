@@ -1,5 +1,14 @@
 # MAGIC – Microsoft Azure Graph Information Crawler
 
+
+## ⚠️ Repository Moved
+
+This repository is **no longer actively maintained**.
+
+➡️ **The project has been moved to a new repository:**  
+👉 https://github.com/SVA-Cybersecurity/magic
+
+
 MAGIC is a wrapper around the Microsoft Graph Python SDK designed to extract incident‑response‑relevant data from Microsoft 365 environments.
 It assists analysts in exporting log data efficiently and produces a consolidated `.jsonl` file for ingestion into OpenSearch or Timesketch.
 
