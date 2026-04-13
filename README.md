@@ -14,7 +14,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 
 # 2. Install MAGIC
-pip install git+https://github.com/magic-tool/magic.git
+pip install git+https://github.com/SVA-Cybersecurity/magic.git
 
 # 3. Initialize workspace (creates config + folders)
 magic-init
