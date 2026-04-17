@@ -528,39 +528,23 @@ class BaseCrawler(ICrawler, CreateGraphClientMixin):
                 if e.response_status_code == 429:
                     self.logger.warning(f"Received 429 Too Many Requests. Retrying in {retry_after} seconds...")
                 elif e.response_status_code == 500:
-                    if hasattr(e, "message"):
-                        if hasattr(e, "additional_data"):
-                            error_message = (
-                                e.error.additional_data.get('innererror', {"internalexception": ""})
-                                .get('internalexception', {"message": ""})
-                                .get('message', "-")
+                    if hasattr(e, "error") and e.error is not None:
+                        if hasattr(e.error, "message"):
+                            raise Exception(f"Received 500 Server error: {e.error.message}")
+                        else:
+                            raise Exception("Received 500 Server error")
+                    else:
+                        raise Exception("Received 500 Server error")
+                elif e.response_status_code == 503:
+                    if hasattr(e, "error") and e.error is not None:
+                        if hasattr(e.error, "message"):
+                            self.logger.warning(
+                                f"Received 503 The service is unavailable: {e.error.message}. Retrying in {retry_after} seconds..."
                             )
-                            if (
-                                error_message
-                                == "Invalid StartDate value. The StartDate can't be older than 90 days from today."
-                            ):
-                                raise Exception(error_message + " Try to download other date frames.")
-                            elif error_message != "-":
-                                self.logger.warning(
-                                    f"Received 500 Server error: {error_message}. Retrying in {retry_after} seconds..."
-                                )
-                            else:
-                                self.logger.warning(
-                                    f"Received 500 Server error: {e.error.additional_data}. Retrying in {retry_after} seconds..."
-                                )
                         else:
                             self.logger.warning(
-                                f"Received 500 Server error: {e.error.message}. Retrying in {retry_after} seconds..."
+                                f"Received 503 The service is unavailable. Retrying in {retry_after} seconds..."
                             )
-                    else:
-                        self.logger.warning(f"Received 500 Server error. Retrying in {retry_after} seconds...")
-                elif e.response_status_code == 503:
-                    if hasattr(e, "message"):
-                        self.logger.warning(
-                            f"Received 503 The service is unavailable: {e.error.message}. Retrying in {retry_after} seconds..."
-                        )
-                    else:
-                        self.logger.warning(f"Received 503 The service is unavailable. Retrying in {retry_after} seconds...")
                 else:
                     raise
 
