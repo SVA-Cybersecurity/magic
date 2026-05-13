@@ -487,23 +487,26 @@ class TestMessageTracesCrawler(DateFieldTestMixin):
 
         tasks = crawler.get_tasks()
 
-        assert len(tasks) == 1
+        assert len(tasks) == 10
         assert isinstance(tasks[0], TaskWrapper)
-        assert tasks[0].name == "crawl_message_traces"
+        assert tasks[0].name == "crawl_message_traces_from_user@example.com"
 
     async def test_crawl_message_traces_calls_simple_graph_query(self, tmp_path):
         """crawl_message_traces should call simple_graph_query with correct params."""
+        from datetime import timedelta
+
+        now = datetime.now()
         config = make_message_traces_config(sender_address="s@example.com")
         kwargs = make_crawler_kwargs(tmp_path, config=config)
         crawler = MessageTracesCrawler(**kwargs)
 
         with patch.object(crawler, "simple_graph_query", new_callable=AsyncMock) as mock_query:
-            await crawler.crawl_message_traces()
+            await crawler.crawl_message_traces(now - timedelta(days=5), now, 'user@example.com', None)
 
         mock_query.assert_called_once()
         call_kwargs = mock_query.call_args[1]
         assert call_kwargs["filter_timstamp_name"] == "receivedDateTime"
-        assert call_kwargs["request_func"] == "admin.exchange.message_traces"
+        assert call_kwargs["request_func"] == "admin.exchange.tracing.message_traces"
 
 
 class TestMessageTracesPWSHCrawler(DateFieldTestMixin):

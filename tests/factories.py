@@ -49,6 +49,7 @@ def make_message_traces_config(**overrides) -> M365MessageTracesConfig:
     """Create a valid M365MessageTracesConfig with optional overrides."""
     defaults = {
         "type": "m365_message_traces",
+        "sender_addresses": ["user@example.com"],
     }
     return M365MessageTracesConfig(**{**defaults, **overrides})
 
