@@ -7,6 +7,8 @@
 __author__ = "Alexander Goedeke"
 __version__ = "0.5.0"
 
+# The message trace API needs a special onboarding in the target tenant
+# https://learn.microsoft.com/en-us/exchange/monitoring/trace-an-email-message/graph-api-message-trace
 
 # -------------------------------------------------- #
 # IMPORTS                                            #
