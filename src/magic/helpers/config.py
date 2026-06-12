@@ -152,9 +152,9 @@ class M365MessageTracesPWSHConfig(BaseAuditConfig):
         return v
 
     @model_validator(mode='before')
-    def check_if_sender_or_recipient(cls, values):
-        if values.get('recipient_addresses') is None and values.get('sender_addresses') is None:
-            raise ValueError("Either sender_addresses or recipient_addresses must be set.")
+    def check_if_subject_and_subject_filter_type(cls, values):
+        if values.get('subject') is None and values.get('subject_filter_type') is not None:
+            raise ValueError("A subject must be set to use subject_filter_type.")
         return values
 
     @field_validator('subject_filter_type')

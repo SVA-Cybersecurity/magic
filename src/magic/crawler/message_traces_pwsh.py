@@ -59,7 +59,12 @@ class MessageTracesPWSHCrawler(BaseCrawler):
         for tmp_date_start, tmp_date_end in daterange(date_start, date_end, self.config.number_interval_days):
 
             if not senders and not recipients:
-                continue
+                tasks.append(
+                    TaskWrapper(
+                        name="crawl_message_traces_pwsh",
+                        coroutine=self.crawl_message_traces_pwsh(tmp_date_start, tmp_date_end, None, None),
+                    )
+                )
 
             if not senders and recipients:
                 for recipient in recipients:
@@ -97,6 +102,11 @@ class MessageTracesPWSHCrawler(BaseCrawler):
             f"Get message trace logs via powershell from {date_start} to {date_end}"
             + (f" for sender {sender_address}" if sender_address else "")
             + (f" for recipient {recipient_address}" if recipient_address else "")
+            + (
+                f" with subject {self.config.subject_filter_type.lower()} '{self.config.subject}'"
+                if self.config.subject_filter_type and self.config.subject
+                else ""
+            )
         )
 
         date_start_identifier, date_end_identifier = date_string_in_file_identifier(date_start, date_end)
@@ -107,7 +117,11 @@ class MessageTracesPWSHCrawler(BaseCrawler):
             "to-" + recipient_address if recipient_address else "",
             "from-" + self.config.from_ip if self.config.from_ip else "",
             "to-" + self.config.to_ip if self.config.to_ip else "",
-            "subject-" + self.config.subject if self.config.subject else "",
+            (
+                "subject-" + self.config.subject_filter_type.lower() + "-" + self.config.subject.replace(" ", "_")
+                if self.config.subject_filter_type and self.config.subject
+                else ""
+            ),
             date_start_identifier,
             date_end_identifier,
         )
