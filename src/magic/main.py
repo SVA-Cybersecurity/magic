@@ -102,6 +102,9 @@ async def run(
     if manifest:
         """just output permission manifest.json"""
         await permission_validator.create_manifest()
+        # Cleanup crawlers
+        for crawler in data_crawlers:
+            await crawler.close()
         close_coroutines(tasks)
         sys.exit(1)
 
@@ -112,6 +115,9 @@ async def run(
 
         if not result[0]:
             logger.error("Permission validation failed - please set permissions accordingly!")
+            # Cleanup crawlers
+            for crawler in data_crawlers:
+                await crawler.close()
             close_coroutines(tasks)
             sys.exit(1)
 
@@ -141,6 +147,10 @@ async def run(
     """ chained enrichment """
     for task in tasks:
         await task
+
+    # Close all crawler clients to cleanup aiohttp sessions
+    for crawler in data_crawlers:
+        await crawler.close()
 
 
 def bootstrap_argparser():
@@ -200,6 +210,22 @@ def main() -> None:
         asyncio.run(run(args.reports_dir, logger, settings, actions, enrichments, args.output_dir, args.debug, args.manifest))
     except RuntimeError:
         sys.exit(1)
+    finally:
+        # Cleanup any pending aiohttp sessions
+        try:
+            import aiohttp
+            import gc
+            gc.collect()
+            # Close any remaining aiohttp.ClientSession instances
+            for obj in gc.get_objects():
+                if isinstance(obj, aiohttp.ClientSession):
+                    try:
+                        obj.close()
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+    
     elapsed = time.perf_counter() - seconds
     logger.info("Magic executed in {0:0.2f} seconds".format(elapsed))
 
