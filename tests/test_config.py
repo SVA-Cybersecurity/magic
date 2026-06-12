@@ -208,10 +208,10 @@ class TestM365MessageTracesConfig:
 class TestM365MessageTracesPWSHConfig:
     """Tests for the PowerShell Message Traces crawl config."""
 
-    def test_sender_or_recipient_required(self):
-        """Omitting both sender_addresses and recipient_addresses must raise."""
-        with pytest.raises(ValidationError, match="sender_addresses|recipient_addresses"):
-            M365MessageTracesPWSHConfig(sender_addresses=None, recipient_addresses=None)
+    def test_subject_for_subject_filter_type_required(self):
+        """Omitting subject but set subject_filter_type must raise."""
+        with pytest.raises(ValidationError, match="subject_filter_type"):
+            M365MessageTracesPWSHConfig(subject_filter_type="Contains")
 
     def test_valid_with_sender(self):
         """Providing sender_addresses alone should be valid."""

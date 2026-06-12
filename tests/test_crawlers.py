@@ -577,7 +577,7 @@ class TestMessageTracesPWSHCrawler(DateFieldTestMixin):
         assert all(isinstance(t, TaskWrapper) for t in tasks)
 
     def test_get_tasks_no_sender_no_recipient_returns_empty(self, tmp_path):
-        """With neither senders nor recipients, no tasks should be generated."""
+        """With neither senders nor recipients, one tasks should be generated."""
         from datetime import timedelta
 
         now = datetime.now()
@@ -593,7 +593,8 @@ class TestMessageTracesPWSHCrawler(DateFieldTestMixin):
 
         tasks = crawler.get_tasks()
 
-        assert tasks == []
+        assert len(tasks) == 1
+        assert all(isinstance(t, TaskWrapper) for t in tasks)
 
 
 class TestMessagesCrawler(DateFieldTestMixin):
