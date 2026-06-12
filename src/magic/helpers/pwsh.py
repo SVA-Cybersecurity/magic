@@ -121,6 +121,29 @@ class CmdletRootModel(Parsable):
         return CmdletRootModel(cmdlet_input=CmdletInput(cmdlet_name=cmdlet_name, parameters=CmdletParameters(**raw_params)))
 
 
+def build_cmdlet_root_model(
+    cmdlet_name: str,
+    parameters: Optional[dict[str, Any]] = None,
+    allowed_fields: Optional[list[str]] = None,
+) -> CmdletRootModel:
+    if parameters is None:
+        parameters = {}
+
+    if allowed_fields is None:
+        allowed_fields = list(parameters.keys())
+
+    return CmdletRootModel(
+        CmdletInput(
+            cmdlet_name=cmdlet_name,
+            parameters=CmdletParameters(allowed_fields=allowed_fields, **parameters),
+        )
+    )
+
+
+def build_pwsh_request_builder(request_adapter: RequestAdapter, tenant_id: str) -> "PowerShellModuleRequestBuilder":
+    return PowerShellModuleRequestBuilder(request_adapter, path_parameters={"tenant_id": tenant_id})
+
+
 class PowerShellModuleRequestBuilder(BaseRequestBuilder):
     """
     Provides operations to call a powershell property using the microsoft graph api.

@@ -18,7 +18,7 @@ from ..helpers.utils import TaskWrapper, date_string_in_file_identifier, dateran
 from ..helpers.registry import register_crawler
 from ..helpers.permissions import require_permissions, ServicePrincipalType
 from ..helpers.config import RETENTION_MESSAGE_TRACES
-from ..helpers.pwsh import PowerShellModuleRequestBuilder, CmdletRootModel, CmdletParameters, CmdletInput
+from ..helpers.pwsh import build_cmdlet_root_model, build_pwsh_request_builder
 from datetime import datetime, timedelta
 
 
@@ -123,36 +123,35 @@ class MessageTracesPWSHCrawler(BaseCrawler):
             await self.make_graph_request_with_retry_and_pagination(
                 http_method="POST",
                 output_file_path=output_file_path,
-                request_func=PowerShellModuleRequestBuilder(
-                    self.graph_client.request_adapter, path_parameters={"tenant_id": self.settings.auth.tenant_id}
+                request_func=build_pwsh_request_builder(
+                    request_adapter=self.graph_client.request_adapter,
+                    tenant_id=self.settings.auth.tenant_id,
                 ),
-                body=CmdletRootModel(
-                    CmdletInput(
-                        cmdlet_name="Get-MessageTraceV2",
-                        parameters=CmdletParameters(
-                            allowed_fields=[
-                                "StartDate",
-                                "EndDate",
-                                "ResultSize",
-                                "RecipientAddress",
-                                "SenderAddress",
-                                "FromIP",
-                                "Subject",
-                                "ToIP",
-                                "SubjectFilterType",
-                                "StartingRecipientAddress",
-                            ],
-                            EndDate=date_end.strftime("%Y-%m-%dT%H:%M:%S.%f"),
-                            StartDate=date_start.strftime("%Y-%m-%dT%H:%M:%S.%f"),
-                            ResultSize=self.config.result_size,
-                            SenderAddress=sender_address,
-                            RecipientAddress=recipient_address,
-                            FromIP=self.config.from_ip,
-                            ToIP=self.config.to_ip,
-                            Subject=self.config.subject,
-                            SubjectFilterType=self.config.subject_filter_type,
-                        ),
-                    )
+                body=build_cmdlet_root_model(
+                    cmdlet_name="Get-MessageTraceV2",
+                    allowed_fields=[
+                        "StartDate",
+                        "EndDate",
+                        "ResultSize",
+                        "RecipientAddress",
+                        "SenderAddress",
+                        "FromIP",
+                        "Subject",
+                        "ToIP",
+                        "SubjectFilterType",
+                        "StartingRecipientAddress",
+                    ],
+                    parameters={
+                        "EndDate": date_end.strftime("%Y-%m-%dT%H:%M:%S.%f"),
+                        "StartDate": date_start.strftime("%Y-%m-%dT%H:%M:%S.%f"),
+                        "ResultSize": self.config.result_size,
+                        "SenderAddress": sender_address,
+                        "RecipientAddress": recipient_address,
+                        "FromIP": self.config.from_ip,
+                        "ToIP": self.config.to_ip,
+                        "Subject": self.config.subject,
+                        "SubjectFilterType": self.config.subject_filter_type,
+                    },
                 ),
             )
 

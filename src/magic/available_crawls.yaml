@@ -55,7 +55,6 @@
 - type: m365
   message_rules: False
   authentication_methods: False
-  mailbox_settings: False
   users_transitive_member_of: False
   service_principals_transitive_member_of: False
   directory_provisioning: False
