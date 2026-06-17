@@ -215,6 +215,7 @@ def main() -> None:
         try:
             import aiohttp
             import gc
+
             gc.collect()
             # Close any remaining aiohttp.ClientSession instances
             for obj in gc.get_objects():
@@ -225,7 +226,7 @@ def main() -> None:
                         pass
         except Exception:
             pass
-    
+
     elapsed = time.perf_counter() - seconds
     logger.info("Magic executed in {0:0.2f} seconds".format(elapsed))
 
