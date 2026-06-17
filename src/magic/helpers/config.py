@@ -163,6 +163,7 @@ class M365MessageTracesPWSHConfig(BaseAuditConfig):
             raise ValueError("subject_filter_type must be one of 'Contains', 'EndsWith', 'StartsWith'")
         return v
 
+
 class M365MailboxPermissionsPWSHConfig(BaseModel):
     type: Literal["m365_mailbox_permissions_pwsh"] = "m365_mailbox_permissions_pwsh"
     user_principal_names: Optional[List[EmailStr]] = None

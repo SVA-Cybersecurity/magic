@@ -55,7 +55,9 @@ class MailboxPermissionsPWSHCrawler(BaseCrawler):
         selection_identifier = "all_mailboxes"
 
         if configured_user_principal_names:
-            selected_user_principal_names = [str(user_principal_name) for user_principal_name in configured_user_principal_names]
+            selected_user_principal_names = [
+                str(user_principal_name) for user_principal_name in configured_user_principal_names
+            ]
             selection_identifier = self._build_mailbox_selection_identifier(selected_user_principal_names)
             self.logger.info(
                 f"Crawling mailbox permissions for {len(selected_user_principal_names)} configured user_principal_names"
