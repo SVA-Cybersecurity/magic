@@ -59,6 +59,21 @@ class BaseCrawler(ICrawler, CreateGraphClientMixin):
 
         check_output_dir(output_dir, self.logger)
 
+    async def close(self) -> None:
+        """Close the GraphServiceClient and cleanup resources."""
+        if self.graph_client is not None:
+            try:
+                # Close the HTTP adapter's client to release connections
+                adapter = getattr(self.graph_client, 'request_adapter', None)
+                if adapter is not None:
+                    http_client = getattr(adapter, '_http_client', None)
+                    if http_client is not None and hasattr(http_client, 'aclose'):
+                        await http_client.aclose()
+            except Exception as e:
+                self.logger.debug(f"Error closing graph client HTTP client: {e}")
+            finally:
+                self.graph_client = None
+
     async def ensure_graph_client(self, scopes: Optional[List[str]] = None) -> GraphServiceClient | None:
         """Ensure `self.graph_client` is initialized before use.
 
@@ -253,18 +268,19 @@ class BaseCrawler(ICrawler, CreateGraphClientMixin):
             request_func = [request_func]
 
         if not os.path.exists(output_file_path):
+            # Ensure graph client is initialized with the specified scopes
+            await self.ensure_graph_client(scopes=scopes)
+            if self.graph_client is None:
+                return
 
             for func in request_func:
 
-                graph_client = await self._create_graph_client(self.settings.auth, scopes=scopes)
-                if graph_client is None:
-                    return
-
                 # get request builder function
                 try:
+                    request_builder = self.graph_client
                     attributes = func.split(".")
                     for attr in attributes:
-                        graph_client = getattr(graph_client, attr)
+                        request_builder = getattr(request_builder, attr)
                 except Exception:
                     self.logger.error(f"Failed to get request builder function for {func}")
                     return
@@ -273,11 +289,11 @@ class BaseCrawler(ICrawler, CreateGraphClientMixin):
                     try:
                         # get request builder query function
                         query_builder_class = getattr(
-                            graph_client,
-                            f"{type(graph_client).__name__}GetQueryParameters",
+                            request_builder,
+                            f"{type(request_builder).__name__}GetQueryParameters",
                         )
                     except Exception:
-                        self.logger.error(f"Failed to get filter query function for {type(graph_client).__name__}")
+                        self.logger.error(f"Failed to get filter query function for {type(request_builder).__name__}")
                         return
 
                     if custom_filter is None:
@@ -309,7 +325,7 @@ class BaseCrawler(ICrawler, CreateGraphClientMixin):
 
                 await self.make_graph_request_with_retry_and_pagination(
                     output_file_path=output_file_path,
-                    request_func=graph_client,
+                    request_func=request_builder,
                     delay=delay,
                     max_retries=max_retries,
                     encoding=encoding,
@@ -426,13 +442,9 @@ class BaseCrawler(ICrawler, CreateGraphClientMixin):
             if self.graph_client is None:
                 return
 
-            graph_client = await self._create_graph_client(self.settings.auth)
-            if graph_client is None:
-                return
-
             # Traverse parent attributes to get the request builder function
             try:
-                parent_request_builder = graph_client
+                parent_request_builder = self.graph_client
                 for attr in parent.split("."):
                     parent_request_builder = getattr(parent_request_builder, attr)
             except AttributeError as e:
