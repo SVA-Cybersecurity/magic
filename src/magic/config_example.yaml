@@ -60,6 +60,7 @@ crawl:
     result_size:
     #number_interval_days: 10
 
+
   - type: m365_mailbox_permissions_pwsh
     user_principal_names: # datatype: list
 
@@ -97,6 +98,7 @@ crawl:
     permission_grants: False
     recommendations: False
     attack_simulation: False
+
 
 enrich:
   timesketch:
