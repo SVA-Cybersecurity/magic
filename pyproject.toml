@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "magic"
-version = "0.5.0"
+version = "0.5.1"
 description = "Microsoft Azure Graph Informations Crawler"
 authors = [
     {name = "Alexander Goedeke"}

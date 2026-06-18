@@ -164,6 +164,11 @@ class M365MessageTracesPWSHConfig(BaseAuditConfig):
         return v
 
 
+class M365MailboxPermissionsPWSHConfig(BaseModel):
+    type: Literal["m365_mailbox_permissions_pwsh"] = "m365_mailbox_permissions_pwsh"
+    user_principal_names: Optional[List[EmailStr]] = None
+
+
 class M365MessagesConfig(BaseAuditConfig):
     type: Literal["m365_messages"] = "m365_messages"
     user_principal_names: Optional[List[EmailStr]] = None
@@ -197,7 +202,7 @@ class M365Config(BaseModel):
     type: Literal["m365"] = "m365"
     message_rules: bool
     authentication_methods: bool
-    mailbox_settings: bool
+    mailbox_settings: bool = False
     users_transitive_member_of: bool
     service_principals_transitive_member_of: bool
     directory_provisioning: bool
@@ -238,6 +243,7 @@ CrawlItem = Annotated[
         M365AuditConfig,
         M365MessageTracesConfig,
         M365MessageTracesPWSHConfig,
+        M365MailboxPermissionsPWSHConfig,
         M365MessagesConfig,
         M365MessageConfig,
         M365Config,

@@ -78,6 +78,7 @@ class M365Crawler(BaseCrawler):
 
     @require_permissions([(ServicePrincipalType.GRAPH_API, "MailboxSettings.Read")])
     async def crawl_mailbox_settings(self):
+        self.logger.info("crawl_mailbox_settings is deprecated. Use m365_mailbox_permissions_pwsh instead.")
         await self.make_graph_request_for_child_items(
             parent="users",
             child="mailbox_settings",

@@ -61,6 +61,10 @@ crawl:
     #number_interval_days: 10
 
 
+  - type: m365_mailbox_permissions_pwsh
+    user_principal_names: # datatype: list
+
+
   - type: m365_messages
     date_start:
     date_end:
@@ -78,7 +82,6 @@ crawl:
   - type: m365
     message_rules: False
     authentication_methods: False
-    mailbox_settings: False
     users_transitive_member_of: False
     service_principals_transitive_member_of: False
     directory_provisioning: False
@@ -95,6 +98,7 @@ crawl:
     permission_grants: False
     recommendations: False
     attack_simulation: False
+
 
 enrich:
   timesketch:
