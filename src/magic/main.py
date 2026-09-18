@@ -25,6 +25,7 @@ from .helpers.utils import check_output_dir, log_task, close_coroutines
 from .helpers.logging import Logger
 from .helpers.registry import CRAWLER_REGISTRY, ENRICHER_REGISTRY
 from .helpers.permissions import PermissionValidator
+from .helpers.mixins import create_validated_credential
 
 APP_DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -73,84 +74,96 @@ async def run(
     data_crawlers = []
     data_enricher = []
 
-    if actions.root:
-        for item in actions.root:
-            if item.type in CRAWLER_REGISTRY.crawlers:
-                handler_class = CRAWLER_REGISTRY.get(item.type)
-                handler = handler_class(
-                    reports_dir=reports_dir,
-                    settings=settings,
-                    output_dir=os.path.join(output_dir, item.type),
-                    config=item,
-                    debug=debug,
-                )
-
-                data_crawlers.append(handler)
-
-    tasks = [
-        log_task(task, crawler.logger) for crawler in data_crawlers if crawler is not None for task in crawler.get_tasks()
-    ]
-
-    required_permissions = set()
-
-    for crawler in data_crawlers:
-        required_permissions.update(crawler.get_collected_permissions())
-
-    if manifest or settings.permission_preflight_check:
-        permission_validator = PermissionValidator(settings, reports_dir, required_permissions, debug)
-
-    if manifest:
-        """just output permission manifest.json"""
-        await permission_validator.create_manifest()
-        # Cleanup crawlers
-        for crawler in data_crawlers:
-            await crawler.close()
-        close_coroutines(tasks)
+    """ one shared credentials auth session - isolated graph client http sessions based on that auth session """
+    credential = await create_validated_credential(settings.auth, logger)
+    if credential is None:
+        logger.error("Cannot continue without valid credentials - aborting run.")
         sys.exit(1)
 
-    if settings.permission_preflight_check:
+    permission_validator = None
 
-        """permission validation if enabled"""
-        result = await asyncio.gather(*[asyncio.create_task(permission_validator.validate())])
+    try:
+        if actions.root:
+            for item in actions.root:
+                if item.type in CRAWLER_REGISTRY.crawlers:
+                    handler_class = CRAWLER_REGISTRY.get(item.type)
+                    handler = handler_class(
+                        reports_dir=reports_dir,
+                        settings=settings,
+                        output_dir=os.path.join(output_dir, item.type),
+                        config=item,
+                        debug=debug,
+                        credential=credential,
+                    )
 
-        if not result[0]:
-            logger.error("Permission validation failed - please set permissions accordingly!")
-            # Cleanup crawlers
-            for crawler in data_crawlers:
-                await crawler.close()
+                    data_crawlers.append(handler)
+
+        tasks = [
+            log_task(task, crawler.logger) for crawler in data_crawlers if crawler is not None for task in crawler.get_tasks()
+        ]
+
+        required_permissions = set()
+
+        for crawler in data_crawlers:
+            required_permissions.update(crawler.get_collected_permissions())
+
+        if manifest or settings.permission_preflight_check:
+            permission_validator = PermissionValidator(
+                settings, reports_dir, required_permissions, debug, credential=credential
+            )
+
+        if manifest:
+            """just output permission manifest.json"""
+            await permission_validator.create_manifest()
             close_coroutines(tasks)
             sys.exit(1)
 
-    await asyncio.gather(*tasks)
+        if settings.permission_preflight_check:
 
-    if enrichments:
-        for key, value in enrichments:
-            if key in ENRICHER_REGISTRY.enrichers:
-                handler_class = ENRICHER_REGISTRY.get(key)
-                handler = handler_class(
-                    reports_dir=reports_dir, output_dir=output_dir, settings=settings, config=value, debug=debug
-                )
+            """permission validation if enabled"""
+            result = await asyncio.gather(*[asyncio.create_task(permission_validator.validate())])
 
-                data_enricher.append(handler)
+            if not result[0]:
+                logger.error("Permission validation failed - please set permissions accordingly!")
+                close_coroutines(tasks)
+                sys.exit(1)
 
-    """ run jsonl enrichments as prerequesite for other enrichments """
-    jsonl_enricher = ENRICHER_REGISTRY.get("jsonl")(
-        reports_dir=reports_dir, output_dir=output_dir, settings=settings, config={}, debug=debug
-    )
+        await asyncio.gather(*tasks)
 
-    await asyncio.gather(*[log_task(task, jsonl_enricher.logger) for task in jsonl_enricher.get_tasks()])
+        if enrichments:
+            for key, value in enrichments:
+                if key in ENRICHER_REGISTRY.enrichers:
+                    handler_class = ENRICHER_REGISTRY.get(key)
+                    handler = handler_class(
+                        reports_dir=reports_dir, output_dir=output_dir, settings=settings, config=value, debug=debug
+                    )
 
-    tasks = [
-        log_task(task, enricher.logger) for enricher in data_enricher if enricher is not None for task in enricher.get_tasks()
-    ]
+                    data_enricher.append(handler)
 
-    """ chained enrichment """
-    for task in tasks:
-        await task
+        """ run jsonl enrichments as prerequesite for other enrichments """
+        jsonl_enricher = ENRICHER_REGISTRY.get("jsonl")(
+            reports_dir=reports_dir, output_dir=output_dir, settings=settings, config={}, debug=debug
+        )
 
-    # Close all crawler clients to cleanup aiohttp sessions
-    for crawler in data_crawlers:
-        await crawler.close()
+        await asyncio.gather(*[log_task(task, jsonl_enricher.logger) for task in jsonl_enricher.get_tasks()])
+
+        tasks = [
+            log_task(task, enricher.logger)
+            for enricher in data_enricher
+            if enricher is not None
+            for task in enricher.get_tasks()
+        ]
+
+        """ chained enrichment """
+        for task in tasks:
+            await task
+
+    finally:
+        for crawler in data_crawlers:
+            await crawler.close()
+        if permission_validator is not None:
+            await permission_validator.close()
+        await credential.close()
 
 
 def bootstrap_argparser():
@@ -210,22 +223,6 @@ def main() -> None:
         asyncio.run(run(args.reports_dir, logger, settings, actions, enrichments, args.output_dir, args.debug, args.manifest))
     except RuntimeError:
         sys.exit(1)
-    finally:
-        # Cleanup any pending aiohttp sessions
-        try:
-            import aiohttp
-            import gc
-
-            gc.collect()
-            # Close any remaining aiohttp.ClientSession instances
-            for obj in gc.get_objects():
-                if isinstance(obj, aiohttp.ClientSession):
-                    try:
-                        obj.close()
-                    except Exception:
-                        pass
-        except Exception:
-            pass
 
     elapsed = time.perf_counter() - seconds
     logger.info("Magic executed in {0:0.2f} seconds".format(elapsed))

@@ -47,7 +47,16 @@ class BaseCrawler(ICrawler, CreateGraphClientMixin):
 
     RETENTION = RETENTION_DEFAULT
 
-    def __init__(self, reports_dir, settings, output_dir, config: BaseModel = None, debug: bool = False, logger=__name__):
+    def __init__(
+        self,
+        reports_dir,
+        settings,
+        output_dir,
+        config: BaseModel = None,
+        debug: bool = False,
+        logger=__name__,
+        credential=None,
+    ):
         self.uuid = uuid4()
         self.settings = settings
         self.output_dir = output_dir
@@ -57,40 +66,27 @@ class BaseCrawler(ICrawler, CreateGraphClientMixin):
         self.logger = Logger(f"{logger}.{self.uuid}", reports_dir, debug).bootstrap()
         self.current_run_permissions = set()
 
+        # credentials auth session is created and closed ONLY in the run()
+        # every crawler got its own graph_client with the referenced credentials auth session
+        self._credential = credential
+        self.graph_client = None
+
         check_output_dir(output_dir, self.logger)
 
     async def close(self) -> None:
-        """Close the GraphServiceClient and cleanup resources."""
-        if self.graph_client is not None:
-            try:
-                # Close the HTTP adapter's client to release connections
-                adapter = getattr(self.graph_client, 'request_adapter', None)
-                if adapter is not None:
-                    http_client = getattr(adapter, '_http_client', None)
-                    if http_client is not None and hasattr(http_client, 'aclose'):
-                        await http_client.aclose()
-            except Exception as e:
-                self.logger.debug(f"Error closing graph client HTTP client: {e}")
-            finally:
-                self.graph_client = None
+        """
+        only closes the graph client of the crawler, not the credentials auth session
+        created by run()
+        """
+        await self._close_graph_client(self.graph_client)
+        self.graph_client = None
 
     async def ensure_graph_client(self, scopes: Optional[List[str]] = None) -> GraphServiceClient | None:
-        """Ensure `self.graph_client` is initialized before use.
-
-        This is required because many crawlers build request functions like
-        `self.graph_client.users.by_user_id(...).get` *before* passing them into
-        `make_graph_request_with_retry`, so `self.graph_client` must exist first.
         """
-
-        # Return existing client if already initialized
-        if self.graph_client is not None:
-            return self.graph_client
-
-        if scopes is None:
-            scopes = self.DEFAULT_SCOPES
-
-        # Create new client without caching
-        self.graph_client = await self._create_graph_client(self.settings.auth, scopes=scopes)
+        ensures graph client is initialized by crawler before use
+        """
+        if self.graph_client is None:
+            self.graph_client = self._build_graph_client(scopes or self.DEFAULT_SCOPES)
         return self.graph_client
 
     def build_odata_filter(self, **filters) -> str:

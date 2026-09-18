@@ -46,15 +46,26 @@ class PermissionValidator(CreateGraphClientMixin):
         ServicePrincipalsWithAppIdRequestBuilder.ServicePrincipalsWithAppIdRequestBuilderGetRequestConfiguration
     )
 
-    graph_client: GraphServiceClient
+    graph_client: GraphServiceClient | None
 
     settings: Settings
 
     permissions_to_grant: List[str | None]
 
-    def __init__(self, settings: Settings, reports_dir: str, permissions_to_grant: set = set(), debug: bool = False):
+    def __init__(
+        self,
+        settings: Settings,
+        reports_dir: str,
+        permissions_to_grant: set = set(),
+        debug: bool = False,
+        credential=None,
+    ):
         self.settings = settings
         self.debug = debug
+
+        # credentials auth session is created and closed ONLY in the run()
+        self._credential = credential
+        self.graph_client = None
 
         self.SERVICE_PRINCIPAL_REQUEST_CONFIGURATION = ServicePrincipalsWithAppIdRequestBuilder.ServicePrincipalsWithAppIdRequestBuilderGetRequestConfiguration(
             query_parameters=ServicePrincipalsWithAppIdRequestBuilder.ServicePrincipalsWithAppIdRequestBuilderGetQueryParameters(
@@ -162,7 +173,7 @@ class PermissionValidator(CreateGraphClientMixin):
     async def validate(self) -> bool:
 
         self.logger.info("Starting with the permission check of the configured application.")
-        self.graph_client = await self._create_graph_client(self.settings.auth)
+        self.graph_client = self._build_graph_client()
         if self.graph_client is None:
             return False
 
@@ -208,6 +219,14 @@ class PermissionValidator(CreateGraphClientMixin):
                     return False
 
         return validation
+
+    async def close(self) -> None:
+        """Close the validator's GraphServiceClient (httpx query stack only).
+
+        The injected credential is shared and closed by run().
+        """
+        await self._close_graph_client(self.graph_client)
+        self.graph_client = None
 
 
 def require_permissions(permissions: List[tuple]):
