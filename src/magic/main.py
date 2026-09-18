@@ -148,7 +148,10 @@ async def run(
         await asyncio.gather(*[log_task(task, jsonl_enricher.logger) for task in jsonl_enricher.get_tasks()])
 
         tasks = [
-            log_task(task, enricher.logger) for enricher in data_enricher if enricher is not None for task in enricher.get_tasks()
+            log_task(task, enricher.logger)
+            for enricher in data_enricher
+            if enricher is not None
+            for task in enricher.get_tasks()
         ]
 
         """ chained enrichment """
