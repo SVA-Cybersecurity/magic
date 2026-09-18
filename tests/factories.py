@@ -14,6 +14,7 @@ from magic.helpers.config import (
     M365MessagesConfig,
     M365MessageConfig,
     M365Config,
+    M365TeamsCallRecordsConfig,
     Settings,
     AuthSettings,
     Defaults,
@@ -79,6 +80,17 @@ def make_message_config(**overrides) -> M365MessageConfig:
         "message_id": "test-message-id-123",
     }
     return M365MessageConfig(**{**defaults, **overrides})
+
+
+def make_teams_call_records_config(**overrides) -> M365TeamsCallRecordsConfig:
+    """Create a valid M365TeamsCallRecordsConfig with optional overrides."""
+    from datetime import datetime
+    
+    defaults = {
+        "type": "m365_teams_call_records",
+        "external_user_principal_names": [],
+    }
+    return M365TeamsCallRecordsConfig(**{**defaults, **overrides})
 
 
 def make_m365_config(**overrides) -> M365Config:
