@@ -135,7 +135,12 @@ class M365Crawler(BaseCrawler):
     async def crawl_directory_roles(self):
         await self.simple_graph_query(output_filename_prefix="directory_roles", request_func="directory_roles")
 
-    @require_permissions(["IdentityRiskyServicePrincipal.Read.All", "IdentityRiskyUser.Read.All"])
+    @require_permissions(
+        [
+            (ServicePrincipalType.GRAPH_API, "IdentityRiskyServicePrincipal.Read.All"),
+            (ServicePrincipalType.GRAPH_API, "IdentityRiskyUser.Read.All"),
+        ]
+    )
     async def crawl_risk_detections(self):
         await self.simple_graph_query(
             output_filename_prefix="risk_detections",
