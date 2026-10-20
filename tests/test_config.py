@@ -187,22 +187,22 @@ class TestM365MessageTracesConfig:
 
     def test_defaults(self):
         """Default values should be None for optional fields."""
-        cfg = M365MessageTracesConfig()
+        cfg = M365MessageTracesConfig(sender_addresses=["user@example.com"])
         assert cfg.type == "m365_message_traces"
         assert cfg.from_ip is None
         assert cfg.subject is None
-        assert cfg.number_interval_days == 7
+        assert cfg.number_interval_days == 10
 
     @pytest.mark.parametrize("filter_type", ["Contains", "EndsWith", "StartsWith"])
     def test_valid_subject_filter_types(self, filter_type):
         """Valid subject_filter_type values should pass validation."""
-        cfg = M365MessageTracesConfig(subject="test", subject_filter_type=filter_type)
+        cfg = M365MessageTracesConfig(sender_addresses=["user@example.com"], subject="test", subject_filter_type=filter_type)
         assert cfg.subject_filter_type == filter_type
 
     def test_invalid_subject_filter_type_raises(self):
         """An invalid subject_filter_type with a subject set must raise."""
         with pytest.raises(ValidationError, match="subject_filter_type"):
-            M365MessageTracesConfig(subject="test", subject_filter_type="InvalidFilter")
+            M365MessageTracesConfig(sender_addresses=["user@example.com"], subject="test", subject_filter_type="InvalidFilter")
 
 
 class TestM365MessageTracesPWSHConfig:

@@ -123,9 +123,22 @@ class M365MessageTracesConfig(BaseAuditConfig):
     to_ip: Optional[str] = None
     subject: Optional[str] = None
     subject_filter_type: Optional[str] = None
-    recipient_address: Optional[str] = None
-    sender_address: Optional[str] = None
-    number_interval_days: int = 7
+    recipient_addresses: Optional[List[EmailStr]] = []
+    sender_addresses: Optional[List[EmailStr]] = []
+    result_size: Optional[int] = None
+    number_interval_days: int = 10
+
+    @field_validator('number_interval_days')
+    def check_number_interval_days(cls, v, values):
+        if v < 1 or v > 10:
+            raise ValueError("number_interval_days must be between 1 and 10")
+        return v
+
+    @model_validator(mode='before')
+    def check_if_sender_or_recipient(cls, values):
+        if values.get('recipient_addresses') is None and values.get('sender_addresses') is None:
+            raise ValueError("Either sender_addresses or recipient_addresses must be set.")
+        return values
 
     @field_validator('subject_filter_type')
     def validate_filter_type(cls, v, values):
