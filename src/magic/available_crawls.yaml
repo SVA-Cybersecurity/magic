@@ -57,6 +57,13 @@
   user_principal_name:
 
 
+- type: m365_teams_call_records
+  date_start:
+  date_end:
+  external_user_principal_names: # datatype: list (leave empty for sweep mode, find all calls with any external participant)
+  #number_interval_days: 7
+
+
 - type: m365
   message_rules: False
   authentication_methods: False

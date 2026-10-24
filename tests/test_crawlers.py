@@ -19,6 +19,7 @@ from magic.crawler.message_traces_pwsh import MessageTracesPWSHCrawler
 from magic.crawler.messages import MessagesCrawler
 from magic.crawler.message import MessageCrawler
 from magic.crawler.m365 import M365Crawler
+from magic.crawler.teams_call_records import TeamsCallRecordsCrawler
 from magic.helpers.config import (
     RETENTION_AUDIT,
     RETENTION_SIGN_IN,
@@ -26,6 +27,7 @@ from magic.helpers.config import (
     RETENTION_MESSAGE_TRACES,
     RETENTION_MESSAGES,
     RETENTION_DEFAULT,
+    RETENTION_TEAMS_CALL_RECORDS,
     SignInType,
 )
 from magic.helpers.utils import TaskWrapper
@@ -38,6 +40,7 @@ from tests.factories import (
     make_messages_config,
     make_message_config,
     make_m365_config,
+    make_teams_call_records_config,
     make_crawler_kwargs,
 )
 from tests.mixins import DateFieldTestMixin
@@ -701,3 +704,141 @@ class TestM365Crawler:
 
         assert len(tasks) == 3
         assert all(isinstance(t, TaskWrapper) for t in tasks)
+
+
+class TestTeamsCallRecordsCrawler(DateFieldTestMixin):
+    """Tests for the TeamsCallRecordsCrawler."""
+
+    crawler_class = TeamsCallRecordsCrawler
+    config_factory = staticmethod(make_teams_call_records_config)
+    expected_retention = RETENTION_TEAMS_CALL_RECORDS
+
+    # ------------------------------------------ #
+    # get_tasks: targeted mode (users)           #
+    # ------------------------------------------ #
+
+    def test_get_tasks_targeted_mode_single_user(self, tmp_path):
+        """With one external_user_principal_names, get_tasks should return one TaskWrapper."""
+        config = make_teams_call_records_config(
+            date_start=datetime(2026, 8, 1),
+            date_end=datetime(2026, 8, 10),
+            external_user_principal_names=["attacker@example.com"]
+        )
+        kwargs = make_crawler_kwargs(tmp_path, config=config)
+        crawler = TeamsCallRecordsCrawler(**kwargs)
+
+        tasks = crawler.get_tasks()
+
+        assert len(tasks) == 1
+        assert isinstance(tasks[0], TaskWrapper)
+        assert "attacker@example.com" in tasks[0].name
+
+    def test_get_tasks_targeted_mode_multiple_users(self, tmp_path):
+        """With N external_user_principal_names, get_tasks should return N TaskWrappers."""
+        users = ["attacker1@example.com", "attacker2@example.com", "attacker3@example.com"]
+        config = make_teams_call_records_config(
+            date_start=datetime(2026, 8, 1),
+            date_end=datetime(2026, 8, 10),
+            external_user_principal_names=users
+        )
+        kwargs = make_crawler_kwargs(tmp_path, config=config)
+        crawler = TeamsCallRecordsCrawler(**kwargs)
+
+        tasks = crawler.get_tasks()
+
+        assert len(tasks) == len(users)
+        for task, user in zip(tasks, users):
+            assert isinstance(task, TaskWrapper)
+            assert user in task.name
+
+    # ------------------------------------------ #
+    # get_tasks: sweep mode (no users)           #
+    # ------------------------------------------ #
+
+    def test_get_tasks_sweep_mode_returns_single_task(self, tmp_path):
+        """With empty external_user_principal_names, get_tasks should return one sweep task."""
+        config = make_teams_call_records_config(
+            date_start=datetime(2026, 8, 1),
+            date_end=datetime(2026, 8, 10),
+            external_user_principal_names=[]
+        )
+        kwargs = make_crawler_kwargs(tmp_path, config=config)
+        crawler = TeamsCallRecordsCrawler(**kwargs)
+
+        tasks = crawler.get_tasks()
+
+        assert len(tasks) == 1
+        assert isinstance(tasks[0], TaskWrapper)
+        assert "sweep" in tasks[0].name.lower()
+
+    # ------------------------------------------ #
+    # get_tasks: coroutine is set                #
+    # ------------------------------------------ #
+
+    def test_get_tasks_coroutine_is_set_targeted(self, tmp_path):
+        """Every returned TaskWrapper must have a coroutine attribute (targeted mode)."""
+        config = make_teams_call_records_config(
+            date_start=datetime(2026, 8, 1),
+            date_end=datetime(2026, 8, 10),
+            external_user_principal_names=["user@example.com", "user2@example.com"]
+        )
+        kwargs = make_crawler_kwargs(tmp_path, config=config)
+        crawler = TeamsCallRecordsCrawler(**kwargs)
+
+        tasks = crawler.get_tasks()
+
+        for task in tasks:
+            assert hasattr(task, "coroutine")
+            assert task.coroutine is not None
+            task.coroutine.close()
+
+    def test_get_tasks_coroutine_is_set_sweep(self, tmp_path):
+        """Every returned TaskWrapper must have a coroutine attribute (sweep mode)."""
+        config = make_teams_call_records_config(
+            date_start=datetime(2026, 8, 1),
+            date_end=datetime(2026, 8, 10),
+            external_user_principal_names=[]
+        )
+        kwargs = make_crawler_kwargs(tmp_path, config=config)
+        crawler = TeamsCallRecordsCrawler(**kwargs)
+
+        tasks = crawler.get_tasks()
+
+        for task in tasks:
+            assert hasattr(task, "coroutine")
+            assert task.coroutine is not None
+            task.coroutine.close()
+
+    # ------------------------------------------ #
+    # config: date range validation              #
+    # ------------------------------------------ #
+
+    def test_config_type(self, tmp_path):
+        """Config type field should be 'm365_teams_call_records'."""
+        config = make_teams_call_records_config()
+        assert config.type == "m365_teams_call_records"
+
+    def test_targeted_mode_config(self, tmp_path):
+        """Config with external_user_principal_names should be valid."""
+        config = make_teams_call_records_config(
+            external_user_principal_names=["user@example.com", "user2@example.com"]
+        )
+        assert len(config.external_user_principal_names) == 2
+        assert config.external_user_principal_names[0] == "user@example.com"
+
+    def test_sweep_mode_config(self, tmp_path):
+        """Config with empty external_user_principal_names should be valid."""
+        config = make_teams_call_records_config(
+            external_user_principal_names=[]
+        )
+        assert config.external_user_principal_names == []
+
+    def test_default_number_interval_days(self, tmp_path):
+        """Default number_interval_days should be 7."""
+        config = make_teams_call_records_config()
+        assert config.number_interval_days == 7
+
+    def test_custom_number_interval_days(self, tmp_path):
+        """Custom number_interval_days should be respected."""
+        config = make_teams_call_records_config(number_interval_days=14)
+        assert config.number_interval_days == 14

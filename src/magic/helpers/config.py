@@ -38,6 +38,7 @@ RETENTION_AUDIT = 30
 RETENTION_MESSAGE_TRACES = 90
 RETENTION_UAL = 180
 RETENTION_MESSAGES = 3650  # 10 years
+RETENTION_TEAMS_CALL_RECORDS = 90
 
 
 # -------------------------------------------------- #
@@ -198,6 +199,12 @@ class M365MessageConfig(BaseAuditConfig):
         return values
 
 
+class M365TeamsCallRecordsConfig(BaseAuditConfig):
+    type: Literal["m365_teams_call_records"] = "m365_teams_call_records"
+    external_user_principal_names: Optional[List[EmailStr]] = []
+    number_interval_days: int = 7
+
+
 class M365Config(BaseModel):
     type: Literal["m365"] = "m365"
     message_rules: bool
@@ -246,6 +253,7 @@ CrawlItem = Annotated[
         M365MailboxPermissionsPWSHConfig,
         M365MessagesConfig,
         M365MessageConfig,
+        M365TeamsCallRecordsConfig,
         M365Config,
     ],
     Field(discriminator='type'),
